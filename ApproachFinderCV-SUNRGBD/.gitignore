@@ -1,0 +1,7 @@
+build/*
+devel/*
+src/subrgbd_generation/SUNRGBD_train/*
+src/subrgbd_generation/SUNRGBD_val/*
+.catkin_workspace
+/src/sunrgbd_generation/SUNRGBD_val/
+/src/sunrgbd_generation/SUNRGBD_train/

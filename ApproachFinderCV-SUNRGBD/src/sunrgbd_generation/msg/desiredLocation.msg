@@ -1,0 +1,3 @@
+geometry_msgs/Point location
+float64 location_weight
+geometry_msgs/Quaternion heading
