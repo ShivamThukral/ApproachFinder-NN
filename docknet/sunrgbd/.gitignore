@@ -1,2 +1,3 @@
 sunrgbd_pc_bbox_votes_80k_v2_train/*
 sunrgbd_pc_bbox_votes_80k_v2_val/*
+data_loader_dump/*
