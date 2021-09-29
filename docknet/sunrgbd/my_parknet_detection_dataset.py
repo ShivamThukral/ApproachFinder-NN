@@ -25,7 +25,7 @@ from my_cv_utils import O3DVisualiser, ParknetDatasetVisualiser, ObjectDumper
 DC = SunrgbdDatasetConfig()  # dataset specific config
 MAX_NUM_OBJ = 200  # maximum number of parking allowed per scene
 MEAN_COLOR_RGB = np.array([0.5, 0.5, 0.5])  # sunrgbd color is in 0~1
-DATASET_DIR = "/home/vcr/UBC/Research/simulation/simulation_ws/src/dataset_generation"
+DATASET_DIR = "../../ApproachFinderCV-SUNRGBD/src/sunrgbd_generation"   #sorry for hardcoding the path
 
 
 class ParknetDetectionVotesDataset(Dataset):
@@ -247,8 +247,8 @@ if __name__ == '__main__':
     print("Train Dataset Length = {}".format(len(d_train)))
     print("Val Dataset Length = {}".format(len(d_val)))
 
-    get_sem_cls_statistics(d_train)
-    get_sem_cls_statistics(d_val)
+    #get_sem_cls_statistics(d_train)
+    #get_sem_cls_statistics(d_val)
 
     #proposals = get_num_parking_proposals(d_train)
     #print('Parknet Proposals = {}'.format(proposals))
