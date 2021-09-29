@@ -1,8 +1,4 @@
-# coding: utf-8
-# Copyright (c) Facebook, Inc. and its affiliates.
-#
-# This source code is licensed under the MIT license found in the
-# LICENSE file in the root directory of this source tree.
+
 
 """ Dataset for 3D object detection on SUN RGB-D (with support of vote supervision).
 
@@ -16,8 +12,8 @@ Oriented bounding box is parameterized by (cx,cy,cz), (l,w,h), heading_angle and
 (l,h,w) are *half length* of the object sizes
 The heading angle is a rotation rad from +X rotating towards -Y. (+X is 0, -Y is pi/2)
 
-Author: Charles R. Qi
-Date: 2019
+Author: Shivam Thukral
+Date: 2021
 
 """
 import os
@@ -91,8 +87,6 @@ class SunrgbdDetectionVotesDataset(Dataset):
         calib = np.load(os.path.join(self.data_path, scan_name) + '_calib.npy')
         img = sunrgbd_utils.load_image(os.path.join(self.data_path, scan_name) + '_img.jpg')
         d_img = sunrgbd_utils.load_depth_image(os.path.join(self.data_path, scan_name) + '_depth_img.png')
-        #point_votes = np.load(os.path.join(self.data_path, scan_name) + '_votes.npz')['point_votes']  # Nx10
-
 
         if not self.use_color:
             point_cloud = point_cloud[:, 0:3]
@@ -105,62 +99,10 @@ class SunrgbdDetectionVotesDataset(Dataset):
             height = point_cloud[:, 2] - floor_height
             point_cloud = np.concatenate([point_cloud, np.expand_dims(height, 1)], 1)  # (N,4) or (N,7)
 
-        # ------------------------------- DATA AUGMENTATION ------------------------------
-        if self.augment:
-            if np.random.random() > 0.5:
-                # Flipping along the YZ plane
-                point_cloud[:, 0] = -1 * point_cloud[:, 0]
-                bboxes[:, 0] = -1 * bboxes[:, 0]
-                bboxes[:, 6] = np.pi - bboxes[:, 6]
-                point_votes[:, [1, 4, 7]] = -1 * point_votes[:, [1, 4, 7]]
-
-            # Rotation along up-axis/Z-axis
-            rot_angle = (np.random.random() * np.pi / 3) - np.pi / 6  # -30 ~ +30 degree
-            rot_mat = sunrgbd_utils.rotz(rot_angle)
-
-            point_votes_end = np.zeros_like(point_votes)
-            point_votes_end[:, 1:4] = np.dot(point_cloud[:, 0:3] + point_votes[:, 1:4], np.transpose(rot_mat))
-            point_votes_end[:, 4:7] = np.dot(point_cloud[:, 0:3] + point_votes[:, 4:7], np.transpose(rot_mat))
-            point_votes_end[:, 7:10] = np.dot(point_cloud[:, 0:3] + point_votes[:, 7:10], np.transpose(rot_mat))
-
-            point_cloud[:, 0:3] = np.dot(point_cloud[:, 0:3], np.transpose(rot_mat))
-            bboxes[:, 0:3] = np.dot(bboxes[:, 0:3], np.transpose(rot_mat))
-            bboxes[:, 6] -= rot_angle
-            point_votes[:, 1:4] = point_votes_end[:, 1:4] - point_cloud[:, 0:3]
-            point_votes[:, 4:7] = point_votes_end[:, 4:7] - point_cloud[:, 0:3]
-            point_votes[:, 7:10] = point_votes_end[:, 7:10] - point_cloud[:, 0:3]
-
-            # Augment RGB color
-            if self.use_color:
-                rgb_color = point_cloud[:, 3:6] + MEAN_COLOR_RGB
-                rgb_color *= (1 + 0.4 * np.random.random(3) - 0.2)  # brightness change for each channel
-                rgb_color += (0.1 * np.random.random(3) - 0.05)  # color shift for each channel
-                rgb_color += np.expand_dims((0.05 * np.random.random(point_cloud.shape[0]) - 0.025),
-                                            -1)  # jittering on each pixel
-                rgb_color = np.clip(rgb_color, 0, 1)
-                # randomly drop out 30% of the points' colors
-                rgb_color *= np.expand_dims(np.random.random(point_cloud.shape[0]) > 0.3, -1)
-                point_cloud[:, 3:6] = rgb_color - MEAN_COLOR_RGB
-
-            # Augment point cloud scale: 0.85x-1.15x
-            scale_ratio = np.random.random() * 0.3 + 0.85
-            scale_ratio = np.expand_dims(np.tile(scale_ratio, 3), 0)
-            point_cloud[:, 0:3] *= scale_ratio
-            bboxes[:, 0:3] *= scale_ratio
-            bboxes[:, 3:6] *= scale_ratio
-            point_votes[:, 1:4] *= scale_ratio
-            point_votes[:, 4:7] *= scale_ratio
-            point_votes[:, 7:10] *= scale_ratio
-            if self.use_height:
-                point_cloud[:, -1] *= scale_ratio[0, 0]
 
         # ------------------------------- LABELS ------------------------------
         box3d_centers = np.zeros((MAX_NUM_OBJ, 3))
         box3d_sizes = np.zeros((MAX_NUM_OBJ, 3))                #ST: L, W, H
-        #angle_classes = np.zeros((MAX_NUM_OBJ,))
-        #angle_residuals = np.zeros((MAX_NUM_OBJ,))
-        #size_classes = np.zeros((MAX_NUM_OBJ,))
-        #size_residuals = np.zeros((MAX_NUM_OBJ, 3))
         label_mask = np.zeros((MAX_NUM_OBJ))
         label_mask[0:bboxes.shape[0]] = 1               #ST: mark first K objects only used
         max_bboxes = np.zeros((MAX_NUM_OBJ, 8))
@@ -170,16 +112,10 @@ class SunrgbdDetectionVotesDataset(Dataset):
             bbox = bboxes[i]
             semantic_class = bbox[7]
             box3d_center = bbox[0:3]
-            #angle_class, angle_residual = DC.angle2class(bbox[6])
             # NOTE: The mean size stored in size2class is of full length of box edges,
             # while in sunrgbd_data.py data dumping we dumped *half* length l,w,h.. so have to time it by 2 here
             box3d_size = bbox[3:6] * 2
-            #size_class, size_residual = DC.size2class(box3d_size, DC.class2type[semantic_class])
             box3d_centers[i, :] = box3d_center
-            #angle_classes[i] = angle_class
-            #angle_residuals[i] = angle_residual
-            #size_classes[i] = size_class
-            #size_residuals[i] = size_residual
             box3d_sizes[i, :] = box3d_size
 
         target_bboxes_mask = label_mask
@@ -198,23 +134,13 @@ class SunrgbdDetectionVotesDataset(Dataset):
                 [(xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2, xmax - xmin, ymax - ymin, zmax - zmin])
             target_bboxes[i, :] = target_bbox
 
-        #point_cloud, choices = pc_util.random_sampling(point_cloud, self.num_points, return_choices=True)
-        #point_votes_mask = point_votes[choices, 0]
-        #point_votes = point_votes[choices, 1:]
-
         ret_dict = {}
         ret_dict['point_clouds'] = point_cloud.astype(np.float32)                   #ST: pc subsampled  num_points,3 (+1: Height)
         ret_dict['center_label'] = target_bboxes.astype(np.float32)[:, 0:3]         #ST: bbox center K,3
-        #ret_dict['heading_class_label'] = angle_classes.astype(np.int64)            #ST: Angle class 0 - N-1 0-12
-        #ret_dict['heading_residual_label'] = angle_residuals.astype(np.float32)     #ST: Residual angle
-        #ret_dict['size_class_label'] = size_classes.astype(np.int64)                #ST: Size of the class 0-3 (3 classes)
-        #ret_dict['size_residual_label'] = size_residuals.astype(np.float32)         #ST: residual size of this class
         target_bboxes_semcls = np.zeros((MAX_NUM_OBJ))
         target_bboxes_semcls[0:bboxes.shape[0]] = bboxes[:, -1]  # from 0 to 9      #ST: semantic class of this object
         ret_dict['sem_cls_label'] = target_bboxes_semcls.astype(np.int64)
         ret_dict['box_label_mask'] = target_bboxes_mask.astype(np.float32)
-        #ret_dict['vote_label'] = point_votes.astype(np.float32)                     #ST: num_points,9
-        #ret_dict['vote_label_mask'] = point_votes_mask.astype(np.int64)             #ST: num_points
         ret_dict['scan_idx'] = np.array(idx).astype(np.int64)
         ret_dict['max_gt_bboxes'] = max_bboxes                                      #ST: whole bbox are passed as well
         ret_dict['calib'] = calib.astype(np.float32)
@@ -223,24 +149,6 @@ class SunrgbdDetectionVotesDataset(Dataset):
         ret_dict['scan_name'] = np.array(scan_name).astype(np.int64)
         return ret_dict
 
-
-def viz_votes(pc, point_votes, point_votes_mask, dataloader_dump_dir =os.path.join(BASE_DIR, 'data_loader_dump')):
-    """ Visualize point votes and point votes mask labels
-    pc: (N,3 or 6), point_votes: (N,9), point_votes_mask: (N,)
-    """
-    inds = (point_votes_mask == 1)
-    pc_obj = pc[inds, 0:3]
-    pc_obj_voted1 = pc_obj + point_votes[inds, 0:3]
-    pc_obj_voted2 = pc_obj + point_votes[inds, 3:6]
-    pc_obj_voted3 = pc_obj + point_votes[inds, 6:9]
-    pc_util.write_ply(pc_obj,os.path.join(dataloader_dump_dir, 'pc_obj.ply'))
-    #print("len = {} {}".format(pc_obj.shape, pc_obj_voted1.shape))
-    #print("{}".format(pc_obj_voted1))
-    pc_util.write_ply(pc_obj_voted1,  os.path.join(dataloader_dump_dir, 'pc_obj_voted1.ply'))
-    pc_util.write_ply(pc_obj_voted2, os.path.join(dataloader_dump_dir, 'pc_obj_voted2.ply'))
-    pc_util.write_ply(pc_obj_voted3, os.path.join(dataloader_dump_dir, 'pc_obj_voted3.ply'))
-
-
 def viz_obb(pc, label, mask, bboxes ,dataloader_dump_dir =os.path.join(BASE_DIR, 'data_loader_dump')):
     """ Visualize oriented bounding box ground truth
     pc: (N,3)
@@ -248,7 +156,6 @@ def viz_obb(pc, label, mask, bboxes ,dataloader_dump_dir =os.path.join(BASE_DIR,
     mask: (K,)
     gt_max_bboxes: (K,8)
     """
-
     oriented_boxes = []
     K = label.shape[0]
     for i in range(K):
@@ -293,7 +200,6 @@ if __name__ == '__main__':
     if not os.path.exists(dataloader_dump_dir):
         os.mkdir(dataloader_dump_dir)
     viz_obb(sample['point_clouds'][:,0:3], sample['center_label'], sample['box_label_mask'], sample['max_gt_bboxes'])
-    # viz_votes(sample['point_clouds'], sample['vote_label'], sample['vote_label_mask'])
     sample['depth_img'] = np.array(sample['depth_img'])
     for key in sample:
         print(key,sample[key].shape)
