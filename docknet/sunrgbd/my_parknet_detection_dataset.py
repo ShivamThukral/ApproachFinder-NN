@@ -94,18 +94,14 @@ class ParknetDetectionVotesDataset(Dataset):
                 point_cloud[:, 0] = -1 * point_cloud[:, 0]
                 point_votes[:,[1]] = -1 * point_votes[:,[1]]
                 parking_center_label[:,0] = -1 * parking_center_label[:,0]
-                #point_votes[:, [1, 4, 7]] = -1 * point_votes[:, [1, 4, 7]]
 
             # Rotation along up-axis/Z-axis
-            #rot_angle = (np.random.random() * np.pi / 3) - np.pi / 6  # -30 or +30 degree
             sign = [-1,0,1][np.random.randint(0,3)]
             rot_angle = (sign * 2.0 * np.pi) / DC.num_heading_bin
             rot_mat = sunrgbd_utils.rotz(rot_angle)
 
             point_votes_end = np.zeros_like(point_votes)
             point_votes_end[:, 1:4] = np.dot(point_cloud[:, 0:3] + point_votes[:, 1:4], np.transpose(rot_mat))
-            #point_votes_end[:, 4:7] = np.dot(point_cloud[:, 0:3] + point_votes[:, 4:7], np.transpose(rot_mat))
-            #point_votes_end[:, 7:10] = np.dot(point_cloud[:, 0:3] + point_votes[:, 7:10], np.transpose(rot_mat))
 
             point_cloud[:, 0:3] = np.dot(point_cloud[:, 0:3], np.transpose(rot_mat))
             scene_point_cloud[:,0:3] = np.dot(scene_point_cloud[:, 0:3], np.transpose(rot_mat))
@@ -114,8 +110,6 @@ class ParknetDetectionVotesDataset(Dataset):
             #theta = theta + rot_angle
             parking_center_label[:, 0:3] = np.dot(parking_center_label[:, 0:3], np.transpose(rot_mat))
             point_votes[:, 1:4] = point_votes_end[:, 1:4] - point_cloud[:, 0:3]
-            #point_votes[:, 4:7] = point_votes_end[:, 4:7] - point_cloud[:, 0:3]
-            #point_votes[:, 7:10] = point_votes_end[:, 7:10] - point_cloud[:, 0:3]
 
             # Augment RGB color
             if self.use_color:
@@ -185,14 +179,8 @@ def viz_votes(scene_pc, pc, point_votes, point_votes_mask, dataloader_dump_dir, 
     pc_obj = pc[inds, 0:3]
     pc_obj_voted1 = pc_obj + point_votes[inds, 0:3]
     pc_obj_vote = pc[:,0:3] + point_votes[:,0:3]
-    #pc_obj_voted2 = pc_obj + point_votes[inds, 3:6]
-    #pc_obj_voted3 = pc_obj + point_votes[inds, 6:9]
     pc_util.write_ply(pc_obj,os.path.join(dataloader_dump_dir, 'pc_obj.ply'))
-    #print("len = {} {}".format(pc_obj.shape, pc_obj_voted1.shape))
-    #print("{}".format(pc_obj_voted1))
     pc_util.write_ply(pc_obj_voted1,  os.path.join(dataloader_dump_dir, 'pc_obj_voted1.ply'))
-    #pc_util.write_ply(pc_obj_voted2, os.path.join(dataloader_dump_dir, 'pc_obj_voted2.ply'))
-    #pc_util.write_ply(pc_obj_voted3, os.path.join(dataloader_dump_dir, 'pc_obj_voted3.ply'))
     pc_util.write_ply(scene_pc, os.path.join(dataloader_dump_dir, 'scene.ply'))
     if visualise:
         real_pcd = o3d.geometry.PointCloud()
@@ -253,14 +241,14 @@ if __name__ == '__main__':
     #proposals = get_num_parking_proposals(d_train)
     #print('Parknet Proposals = {}'.format(proposals))
 
-    #TODO : visualise gt parking spots and voted as well.
+    # visualise gt parking spots and voted as well.
     sample = d_val[12]
     # dataloader_dump_dir = os.path.join(BASE_DIR, 'data_loader_parknet_dump')
     # if not os.path.exists(dataloader_dump_dir):
     #     os.mkdir(dataloader_dump_dir)
     # viz_votes(sample['scene_point_clouds'],sample['point_clouds'], sample['vote_label'], sample['vote_label_mask'], dataloader_dump_dir, visualise=True)
 
-    #TODO : Generate Sample examples for training and validation
+    # Generate Sample examples for training and validation
     # output_dir = os.path.join(ROOT_DIR,"demo_files/sample_scenes")
     # obj_dump = ObjectDumper(d_train, output_dir)
     # obj_dump.dumpData([0,1,2,3,40,82,84,85,175,176,177,178,213,214,217,220,221,222,241,243,245,246,261,280,267,287,293])

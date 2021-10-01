@@ -101,9 +101,9 @@ if __name__ == '__main__':
     from my_loss_helper import get_loss
 
     NUM_POINTS = 2000 #(say)
-    MAX_SPOTS = 128
+    NUM_PROPOSALS = 128
     # Define model
-    model = ParkNet(num_class=DC.num_class, num_heading_bin=DC.num_heading_bin, num_weight_bin=DC.num_weight_bin, input_feature_dim=1, num_proposal=MAX_SPOTS, vote_factor=1).cuda()
+    model = ParkNet(num_class=DC.num_class, num_heading_bin=DC.num_heading_bin, num_weight_bin=DC.num_weight_bin, input_feature_dim=1, num_proposal=NUM_PROPOSALS, vote_factor=1).cuda()
     try:
         # Define dataset - NOTE: I have removed number of points from here
         TRAIN_DATASET = ParknetDetectionVotesDataset(split_set='train', num_points= 2000, use_height=True, use_color=False, augment=True)
@@ -111,28 +111,13 @@ if __name__ == '__main__':
         sample = TRAIN_DATASET[0]
         inputs = {'point_clouds': torch.from_numpy(sample['point_clouds']).unsqueeze(0).cuda()}
     except:
-        print('Dataset has not been prepared. Use a random sample.')
-        sample = {}
-        inputs = {'point_clouds': torch.rand((2,NUM_POINTS, 4)).cuda()}
-        # inputs = {'point_clouds': torch.rand((NUM_POINTS, 3)).unsqueeze(0).cuda()}
-        # ST: generate random ground truth value as well
-        sample['center_label'] = np.random.randn(MAX_SPOTS,3)
-        mask = np.random.choice([0, 1], size=NUM_POINTS*2, p=[.5, .5])
-        sample['vote_label_mask'] = mask
-        sample['vote_label'] = np.random.randn(NUM_POINTS*2,3)
-        sample['parking_label_mask'] = np.random.choice([0, 1], size=MAX_SPOTS, p=[.5, .5])
-        sample['weights_per_heading_label'] = np.random.randn(MAX_SPOTS, DC.num_heading_bin)
+        print('Dataset has not been prepared. Please prepare the dataset first')
 
 
     end_points = model(inputs)
     for key in end_points:
         print(key, end_points[key].shape)
     print('-'*30)
-
-    # add the ground truth values
-    #end_points['vote_label_mask'] = torch.from_numpy(sample['vote_label_mask']).unsqueeze(0).cuda()
-    #end_points['vote_label'] = torch.from_numpy(sample['vote_label_mask']).unsqueeze(0).cuda()
-
 
     try:
         # Compute loss
@@ -141,22 +126,20 @@ if __name__ == '__main__':
         loss, end_points = get_loss(end_points, DC)
         print('loss', loss)
         end_points['point_clouds'] = inputs['point_clouds']
-        end_points['pred_mask'] = np.ones((1, 128)) #num of proposals
-        #parse the predictions
-        # Used for AP calculation
-        CONFIG_DICT = {'remove_empty_box': True, 'use_3d_nms': True,
-                       'nms_iou': 0.5,
-                       'use_old_type_nms': False, 'cls_nms':False,
-                       'per_class_proposal': False,
-                       'conf_thresh': 0.05, 'dataset_config': DC,
-                       'remove_colliding_placements': True, 'outlier_removal': True}
-        # batch_pred_map_cls = my_parse_predictions(end_points, CONFIG_DICT)
-        # batch_gt_map_cls = parse_groundtruths(end_points, CONFIG_DICT)
-        # dump_results(end_points, 'tmp', DC, inference_switch=False)
+        #end_points['pred_mask'] = np.ones((1, NUM_PROPOSALS)) #num of proposals
+
+        #Used for AP calculation
+        CONFIG_DICT = {'remove_colliding_placements_scene': False, 'outlier_removal': False,
+                           'remove_colliding_placements_object': False,
+                           'conf_thresh': 0.05, 'min_weight_thresh': 0.01,
+                           'dataset_config': DC}
+        batch_pred_map_cls = my_parse_predictions(end_points, CONFIG_DICT)
+        batch_gt_map_cls = parse_groundtruths(end_points, CONFIG_DICT)
+        dump_results(end_points, 'tmp', DC, inference_switch=False)
         # for key in end_points:
         #     if 'loss' in key or 'acc' in key or 'ratio' in key:
         #         print(key, end_points[key].item())
-        # print('-' * 30)
-        # #print(end_points['batch_gt_map_cls'])
+        print('-' * 30)
+        #print(end_points['batch_gt_map_cls'])
     except:
         print('Dataset has not been prepared. Skip loss and dump.')

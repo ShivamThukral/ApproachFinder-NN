@@ -1,5 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
-#
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -57,11 +55,8 @@ class ProposalModule(nn.Module):
         )
 
         # Object proposal/detection
-        # Objectness scores (2), center residual (3),
-        # heading class+residual (num_heading_bin*2), size class+residual(num_size_cluster*4)
         self.conv1 = torch.nn.Conv1d(128, 128, 1)
         self.conv2 = torch.nn.Conv1d(128, 128, 1)
-        # # self.conv3 = torch.nn.Conv1d(128, 2 + 3 + num_heading_bin * 2 + num_size_cluster * 4 + self.num_class, 1)
         self.conv3 = torch.nn.Conv1d(128, 2 + 3 + num_heading_bin , 1)
         self.bn1 = torch.nn.BatchNorm1d(128)
         self.bn2 = torch.nn.BatchNorm1d(128)
@@ -106,7 +101,6 @@ class ProposalModule(nn.Module):
 
 if __name__ == '__main__':
     sys.path.append(os.path.join(ROOT_DIR, 'sunrgbd'))
-    #from my_sunrgbd_detection_dataset import SunrgbdDetectionVotesDataset, DC
     from my_parknet_detection_dataset import ParknetDetectionVotesDataset, DC
 
     net = ProposalModule(DC.num_class, DC.num_heading_bin, DC.num_weight_bin,
