@@ -22,7 +22,7 @@
 #define DECREASE_RANGE 0.124  // 1/4th of wheelchair width
 
 
-#define VISUALISATIONS
+//#define VISUALISATIONS
 #define EUCLIDEAN_DISTANCE_THRESHOLD 0.05  // 10cms
 #define EUCLIDEAN_CLUSTER_MIN_SIZE 120
 
