@@ -26,7 +26,7 @@ from my_cv_utils import O3DVisualiser, ParknetDatasetVisualiser, ObjectDumper
 DC = SunrgbdDatasetConfig()  # dataset specific config
 MAX_NUM_OBJ = 200  # maximum number of parking allowed per scene
 MEAN_COLOR_RGB = np.array([0.5, 0.5, 0.5])  # sunrgbd color is in 0~1
-DATASET_DIR = os.path.join(PARENT_DIR,"ApproachFinderCV-SUNRGBD/src/sunrgbd_generation")   #sorry for hardcoding the path
+DATASET_DIR = os.path.join(PARENT_DIR,"ApproachFinderCV-SUNRGBD/src/sunrgbd_dataset")   #sorry for hardcoding the path
 
 
 class ParknetDetectionVotesDataset(Dataset):
@@ -48,6 +48,15 @@ class ParknetDetectionVotesDataset(Dataset):
 
     def __len__(self):
         return len(self.scan_names)
+
+    def getClass(self, idx):
+        scan_name = self.scan_names[idx]
+        log_path = os.path.join(self.data_path, scan_name) + '_log.json'
+        log_label = {}
+        with open(log_path) as infile:
+            log_label = json.load(infile)
+        return np.int64(sunrgbd_utils.type2class[log_label['class']])
+
 
     def __getitem__(self, idx):
         """
@@ -210,8 +219,7 @@ def get_sem_cls_statistics(d):
     sem_cls_cnt = {}
     for i in range(len(d)):
         if i % 500 == 0: print(i)
-        sample = d[i]
-        class_type = sample['sem_cls_label']
+        class_type = d.getClass(i)
         #class_type = sunrgbd_utils.type2class[sem_cls]
         if class_type not in sem_cls_cnt:
             sem_cls_cnt[class_type] = 0
@@ -241,12 +249,9 @@ if __name__ == '__main__':
     #proposals = get_num_parking_proposals(d_train)
     #print('Parknet Proposals = {}'.format(proposals))
 
-    # visualise gt parking spots and voted as well.
-    sample = d_val[12]
-    # dataloader_dump_dir = os.path.join(BASE_DIR, 'data_loader_parknet_dump')
-    # if not os.path.exists(dataloader_dump_dir):
-    #     os.mkdir(dataloader_dump_dir)
-    # viz_votes(sample['scene_point_clouds'],sample['point_clouds'], sample['vote_label'], sample['vote_label_mask'], dataloader_dump_dir, visualise=True)
+    # visualise a random sample from the data
+    visualiser = ParknetDatasetVisualiser(d_train)
+    visualiser.visualise()
 
     # Generate Sample examples for training and validation
     # output_dir = os.path.join(ROOT_DIR,"demo_files/sample_scenes")
@@ -255,9 +260,14 @@ if __name__ == '__main__':
     # obj_dump.dumpData(
     #     [7, 12, 14, 18, 30, 52, 67, 115, 123, 129, 166, 203, 214, 216, 272, 303, 311, 312, 314, 315])  #validation
 
+    #------ Obselete code please ignore ------------
 
-    # visualiser = ParknetDatasetVisualiser(d_val)
-    # visualiser.visualise()
+    # visualise gt parking spots and voted as well.
+    # sample = d_train[2]
+    # dataloader_dump_dir = os.path.join(BASE_DIR, 'data_loader_parknet_dump')
+    # if not os.path.exists(dataloader_dump_dir):
+    #     os.mkdir(dataloader_dump_dir)
+    # viz_votes(sample['scene_point_clouds'],sample['point_clouds'], sample['vote_label'], sample['vote_label_mask'], dataloader_dump_dir, visualise=True)
 
     # visualiser = O3DVisualiser()
     # visualiser.addPointCloud(sample['point_clouds'], 'object_pc')

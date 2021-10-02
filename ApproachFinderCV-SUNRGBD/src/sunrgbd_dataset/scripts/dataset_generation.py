@@ -136,7 +136,7 @@ if __name__ == '__main__':
                                                                            augment=False, num_points=80000)
     parkingCV = cv_pipeline.ParkingSpotsCV(counter=1, dataset=dataset_train)
     generate_data = GenerateData(dataset=dataset_train, parkingCV=parkingCV, config = GRID_DICT)
-    sample = generate_data.generateLabel(15)    # 7, 12, 15, 16, 19
+    sample = generate_data.generateLabel(7)    # 7, 12, 15, 16, 19
     print(sample.keys())
     # for key in sample:
     #     if not isinstance(sample[key], dict):

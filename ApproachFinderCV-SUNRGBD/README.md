@@ -22,8 +22,15 @@ source ./devel/setup.bash
 ```
 2. Run the following commands in separate terminals:
 ```asm
-rosrun sunrgbd_generation find_parking_spots_dataset
-rosrun sunrgbd_generation sunrgbd_dataset_builder.py
+rosrun sunrgbd_dataset sunrgbd_dataset_node 
+rosrun sunrgbd_dataset sunrgbd_dataset_builder.py
 ```
 
-This will create two folders in the sunrgbd_generation package:
+This will create two folders in the sunrgbd_dataset package: `SUNRGBD_train` and `SUNRGBD_val`. These folders contain the detected docking locations corresponding to each object in the SUN RGB-D dataset.
+
+You can visualise a random sample using the following commands:
+
+```asm
+cd docknet/sunrgbd
+python my_parknet_detection_dataset.py
+```
