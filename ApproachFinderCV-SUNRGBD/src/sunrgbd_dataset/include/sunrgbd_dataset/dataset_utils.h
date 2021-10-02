@@ -28,7 +28,7 @@
 #include <pcl/filters/crop_hull.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/common/common.h>
-#include "dataset_generation/sunrgbd_data_srv.h"
+#include "sunrgbd_dataset/sunrgbd_data_srv.h"
 //#include "desirable_locations/detectionArray.h"
 //#include "desirable_locations/votenetDetection.h"
 //#include "autorally_msgs/desiredLocation.h"
@@ -121,13 +121,13 @@ public:
     cv::Mat image;
     cv::Mat depth_image;
     sensor_msgs::CameraInfo cam_info;
-    sunrgbd_data(dataset_generation::sunrgbd_data_srv::Request req);
+    sunrgbd_data(sunrgbd_dataset::sunrgbd_data_srv::Request req);
 
     void visualise();
     void printDepthValues();
 };
 
-sunrgbd_data::sunrgbd_data(dataset_generation::sunrgbd_data_srv::Request req) {
+sunrgbd_data::sunrgbd_data(sunrgbd_dataset::sunrgbd_data_srv::Request req) {
     scene_cloud = PointCloud::Ptr(new PointCloud);
     sensor_msgs::PointCloud2 cloud = req.scene_pc;
     pcl::fromROSMsg(cloud, *scene_cloud);  // assign the scene cloud

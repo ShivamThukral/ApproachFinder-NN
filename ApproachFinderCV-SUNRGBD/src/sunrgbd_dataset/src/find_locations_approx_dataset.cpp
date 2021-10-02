@@ -1,7 +1,7 @@
 //
 // Created by vcr on 2021-01-08.
 //
-#include "dataset_generation/find_locations_approx.h"
+#include "sunrgbd_dataset/find_locations_approx.h"
 
 std::vector <std::vector<Eigen::Vector3f>>
 FindParkingSpots::filterForFOV(std::vector <std::vector<Eigen::Vector3f>> &locations, sensor_msgs::CameraInfo cam_info) {
@@ -666,7 +666,7 @@ FindParkingSpots::FindParkingSpots(ros::NodeHandle nh)
     marker_id = 0;
 }
 
-bool FindParkingSpots::findSpotsCall(dataset_generation::sunrgbd_data_srv::Request &req, dataset_generation::sunrgbd_data_srv::Response &res )
+bool FindParkingSpots::findSpotsCall(sunrgbd_dataset::sunrgbd_data_srv::Request &req, sunrgbd_dataset::sunrgbd_data_srv::Response &res )
 {
     sunrgbd_data *data = new sunrgbd_data(req);
     //visulise the data
@@ -680,7 +680,7 @@ bool FindParkingSpots::findSpotsCall(dataset_generation::sunrgbd_data_srv::Reque
     res.success = locations.size() > 0;
     for(SalientLocation &loc:locations)
     {
-        dataset_generation::desiredLocation des_loc;
+        sunrgbd_dataset::desiredLocation des_loc;
         des_loc.location = loc.location;
         des_loc.location_weight = loc.weight;
         des_loc.heading = loc.heading;

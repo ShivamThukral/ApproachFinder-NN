@@ -71,7 +71,7 @@ boost::mutex access_guard_;
 class FindParkingSpots{
 public:
     FindParkingSpots(ros::NodeHandle nh); //constructor
-    bool findSpotsCall(dataset_generation::sunrgbd_data_srv::Request &req, dataset_generation::sunrgbd_data_srv::Response &res );
+    bool findSpotsCall(sunrgbd_dataset::sunrgbd_data_srv::Request &req, sunrgbd_dataset::sunrgbd_data_srv::Response &res );
     std::vector<SalientLocation> runCVPipeline(sunrgbd_data *data);
     void fitPlanarModel(pcl::PointCloud<pcl::PointXYZ>::Ptr object_cloud, pcl::ModelCoefficients::Ptr coefficients);
     pcl::PointCloud<pcl::PointXYZ>::Ptr findObjectTop(pcl::ModelCoefficients::Ptr plane_coefficients, pcl::PointCloud<pcl::PointXYZ>::Ptr box_pcd, pcl::PointCloud<pcl::PointXYZ>::Ptr scene_cloud);

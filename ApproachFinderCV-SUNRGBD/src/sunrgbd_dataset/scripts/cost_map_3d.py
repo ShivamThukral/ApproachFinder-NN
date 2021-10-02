@@ -6,7 +6,6 @@ import ros_numpy
 from scipy.spatial.transform import Rotation as R
 from scipy.stats import multivariate_normal
 from joblib import Parallel, delayed
-from autorally_msgs.msg import desiredLocation
 from geometry_msgs.msg import Point
 from sensor_msgs.msg import PointCloud2
 from scipy import spatial

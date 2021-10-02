@@ -4,13 +4,16 @@ import ros_numpy
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import os
 
 
 # insert at 1, 0 is the script path (or '' in REPL)
-sys.path.insert(1, '/home/vcr/UBC/Research/my_votenet/parknet')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(1, BASE_DIR + '/../../../../docknet')
+
 from sunrgbd import my_cv_pipeline as cv_pipeline, my_sunrgbd_detection_dataset as sunrgbd_detection_dataset
-#from autorally_msgs.msg import sunrgbd_data, desiredLocation
-from dataset_generation.srv import sunrgbd_data_srv, sunrgbd_data_srvRequest
+
+from sunrgbd_dataset.srv import sunrgbd_data_srv, sunrgbd_data_srvRequest
 from sensor_msgs.msg import CameraInfo, PointCloud2
 import sensor_msgs.point_cloud2 as pc2
 from cv_bridge import CvBridge

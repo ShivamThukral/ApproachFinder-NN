@@ -1,27 +1,27 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(dataset_generation)
+project(sunrgbd_dataset)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+# add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-     roscpp
-     rospy
-     std_msgs
-     geometry_msgs
-     message_generation
-     sensor_msgs
-     rviz_visual_tools
-     eigen_conversions
-     tf2
-     tf2_ros
-     tf2_sensor_msgs
-     image_geometry
-     cv_bridge
-     nav_msgs
+  eigen_conversions
+  geometry_msgs
+  image_geometry
+  message_generation
+  nav_msgs
+  roscpp
+  rospy
+  rviz_visual_tools
+  sensor_msgs
+  std_msgs
+  tf2
+  tf2_ros
+  tf2_sensor_msgs
+  cv_bridge
 )
 
 ## System dependencies are found with CMake's conventions
@@ -29,6 +29,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(PCL 1.8 REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -117,8 +118,8 @@ find_package(OpenCV)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES dataset_generation
-  CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs sensor_msgs geometry_msgs message_runtime tf2 tf2_ros tf2_sensor_msgs image_geometry
+#  LIBRARIES sunrgbd_dataset
+  CATKIN_DEPENDS eigen_conversions geometry_msgs image_geometry message_generation nav_msgs roscpp rospy rviz_visual_tools sensor_msgs std_msgs tf2 tf2_ros tf2_sensor_msgs
 #  DEPENDS system_lib
 )
 
@@ -133,12 +134,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS}
 )
 
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
-
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/dataset_generation.cpp
+#   src/${PROJECT_NAME}/sunrgbd_dataset.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -146,12 +144,10 @@ add_definitions(${PCL_DEFINITIONS})
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/dataset_generation_node.cpp)
-add_executable(find_parking_spots_dataset src/find_locations_approx_dataset.cpp include/dataset_generation/dataset_utils.h)
+add_executable(${PROJECT_NAME}_node src/find_locations_approx_dataset.cpp include/sunrgbd_dataset/dataset_utils.h)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -161,15 +157,12 @@ add_executable(find_parking_spots_dataset src/find_locations_approx_dataset.cpp 
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(find_parking_spots_dataset ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
-target_link_libraries(find_parking_spots_dataset
-       ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${Eigen_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_node
+   ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${Eigen_LIBRARIES}
+ )
 
 #############
 ## Install ##
@@ -180,11 +173,10 @@ target_link_libraries(find_parking_spots_dataset
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
- catkin_install_python(PROGRAMS
-   scripts/dataset_generation.py
-         scripts/sunrgbd_dataset_builder.py
-   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
- )
+# catkin_install_python(PROGRAMS
+#   scripts/my_python_script
+#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
@@ -219,7 +211,7 @@ target_link_libraries(find_parking_spots_dataset
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_dataset_generation.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_sunrgbd_dataset.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

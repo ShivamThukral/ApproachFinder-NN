@@ -18,3 +18,5 @@ conda install -c anaconda pillow
 conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
 
 conda install -c open3d-admin -c conda-forge open3d
+
+conda install -c conda-forge rospkg

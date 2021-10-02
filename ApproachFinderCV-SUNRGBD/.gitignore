@@ -1,5 +1,5 @@
 build/*
 devel/*
 .catkin_workspace
-/src/sunrgbd_generation/SUNRGBD_val/
-/src/sunrgbd_generation/SUNRGBD_train/
+/src/sunrgbd_dataset/SUNRGBD_val/
+/src/sunrgbd_dataset/SUNRGBD_train/
