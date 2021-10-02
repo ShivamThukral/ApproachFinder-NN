@@ -13,3 +13,17 @@
 NOTE: SUNRGBDtoolbox.zip should have MD5 hash `18d22e1761d36352f37232cba102f91f` (you can check the hash with `md5 SUNRGBDtoolbox.zip` on Mac OS or `md5sum SUNRGBDtoolbox.zip` on Linux)
 
 
+### Run ApproachFinder-CV on SUN RGB-D dataset.
+1. Compile the ROS-Project
+```asm
+cd ApproachFinderCV-SUNRGBD
+catkin_make
+source ./devel/setup.bash
+```
+2. Run the following commands in separate terminals:
+```asm
+rosrun sunrgbd_generation find_parking_spots_dataset
+rosrun sunrgbd_generation sunrgbd_dataset_builder.py
+```
+
+This will create two folders in the sunrgbd_generation package:
