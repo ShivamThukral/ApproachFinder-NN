@@ -23,15 +23,36 @@ plyfile
 'networkx>=2.2,<2.3'
 Pillow
 ```
+Compile the CUDA layers for [PointNet++](http://arxiv.org/abs/1706.02413), which we used in the backbone network:
 
-Install the following packages with conda:
+    cd pointnet2
+    python setup.py install
 
-conda install numpy
+To see if the compilation is successful, try to run `python models/backbone_module.py`, `python models/voting_module.py`, `python models/my_proposal_module.py` and  `python models/parknet.py` to see if a forward pass works.
 
-conda install -c anaconda pillow
+## TODO:Demo
+We ship the code with a pretrained model under *'sunrgbd_demo/model/checkpoint.tar'*. We also ship some sample point clouds for running this demo (refer *sunrgdb_demo/demo_files*).
+Run the following command for demo:
+```python
+python demo.py
+```
+For more information about input use `-h` option. The demo uses a pre-trained model to detect potential docking locations from validation set of SUN RGB-D dataset. We visualise 3D results using open3D and dump relevant intermendiate results in the dump folder.
 
-conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
+## Training
+**Dataset Preparation:** follow the instructions [here](ApproachFinderCV-SUNRGBD/README.md)
 
-conda install -c open3d-admin -c conda-forge open3d
+To train ApproachFinder-NN on SUN RGB-D data:
+```python
+python train.py --log_dir log_docknet
+```
+Use `-h` option to know more about training options. While training you can use TenserBoard to see loss curves by running `python -m tensorboard.main --logdir=<log_dir_name> --port=6006`
+## Evaluation
+We evaluate our network on two criteria: 3D-bounding box tightness and desirability costmap. For further details about these mentrics please refer the paper.
+```python
+python eval.py --checkpoint_path log_docknet/checkpoint.tar --dump_dir eval_docknet
+python eval_desirability.py --checkpoint_path log_docknet/checkpoint.tar --dump_dir eval_des_docknet
+```
+Example results will be dumped in the eval_docknet and eval_des_docknet folder. Please use `-h` option to learn more about evaluation options. 
+The evaluation results are stored in log_eval.txt file for both the metrics. 
 
-conda install -c conda-forge rospkg
+## Results on SUN RGB-D dataset
