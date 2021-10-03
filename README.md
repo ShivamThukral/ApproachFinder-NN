@@ -4,6 +4,8 @@ A real-time computer vision algorithm to find potential docking locations indoor
 ## Project Brief:
 TODO: Add abstract here
 
+<img src="images/docknet-teaser.png" >
+
 ## Installation Instructions:
 Please follow the installation instructions mentioned [here](https://github.com/ShivamThukral/ApproachFinder-CV#installation-instructions) to run the ApproachFinder-CV pipeline. Apart from this, you will have to install the following packages to run ApproachFInder-NN:
 - Install [MATLAB](https://www.mathworks.com/help/install/) extract SUN RGB-D dataset. 
@@ -31,11 +33,11 @@ Compile the CUDA layers for [PointNet++](http://arxiv.org/abs/1706.02413), which
 
 To see if the compilation is successful, try to run `python models/backbone_module.py`, `python models/voting_module.py`, `python models/my_proposal_module.py` and  `python models/parknet.py` to see if a forward pass works.
 
-## TODO:Demo
-We ship the code with a pretrained model under *'sunrgbd_demo/model/checkpoint.tar'*. We also ship some sample point clouds for running this demo (refer *sunrgdb_demo/demo_files*).
+## Demo
+We ship the code with a pretrained model under *'demo_files/model/checkpoint.tar'*. We also ship some sample point clouds for running this demo (refer *demo_files/sample*).
 Run the following command for demo:
 ```python
-python demo.py
+python run_demo.py --model_dir demo_files/model
 ```
 For more information about input use `-h` option. The demo uses a pre-trained model to detect potential docking locations from validation set of SUN RGB-D dataset. We visualise 3D results using open3D and dump relevant intermendiate results in the dump folder.
 
