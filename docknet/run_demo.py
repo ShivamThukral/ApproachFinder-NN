@@ -1,5 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
-#
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
@@ -18,8 +16,7 @@ import math
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', default='sunrgbd', help='Dataset: sunrgbd or scannet [default: sunrgbd]')
 parser.add_argument('--num_point', type=int, default=2000, help='Point Number [default: 20000]')
-parser.add_argument('--model_dir', default='log_parknet', help='Model path till directory')
-parser.add_argument('--split_set', default='train', help='Show demo on train or val set [default: val]')
+parser.add_argument('--model_dir', default='log_docknet', help='Model path till directory')
 parser.add_argument('--num_target', type=int, default=128, help='Number of proposals for Parknet [default: 128]')
 parser.add_argument('--no_height', action='store_true', help='Do NOT use height signal in input.')
 parser.add_argument('--use_color', action='store_true', help='Use RGB color in input.')
@@ -68,7 +65,7 @@ def plot_parking(centers, angles, origin=[0,0,0]):
         meshes.append(arrow_frame)
     return meshes
 
-def visualise_predictions(end_points, sample):
+def visualise_predictions(end_points, scene):
     point_clouds = end_points['point_clouds'].cpu().numpy()
     pred_center = end_points['center'].detach().cpu().numpy()  # (B,K,3)
     pred_heading_weight = end_points['weights_per_heading_scores'].detach().cpu().detach()
@@ -80,7 +77,8 @@ def visualise_predictions(end_points, sample):
     pred_heading_angle = pred_heading_class * ((2 * np.pi) / 12.0)
 
     for i in range(batch_size):
-        scene_pc = sample['scene_point_clouds']
+        scene_pc = scene
+        print(scene_pc.shape)
         inds = (pred_mask[i, :] == 1)
         parking_center = pred_center[i, inds, 0:3]
         angle = pred_heading_angle[i,inds]
@@ -92,29 +90,8 @@ def visualise_predictions(end_points, sample):
         seed_pcd.points = o3d.utility.Vector3dVector(seed_xyz[i,:,:])
         seed_pcd.paint_uniform_color([1,0,0])
         centers = plot_parking(parking_center, angle)
-        o3d.visualization.draw_geometries(centers+[scene_pcd],zoom=0.76000000000000001,
-                                  front=  [ 0.010296775907018422, -0.87771203962763777, 0.47907781403297384 ],
-                                  lookat=[ 0.038509797341647958, 2.5947762886695709, -1.0388716510401055 ],
-                                  up=[ 0.03835858806610111, 0.47909728042225241, 0.87692326609206694 ])
+        o3d.visualization.draw_geometries(centers+[scene_pcd])
 
-def visualise_groundtruth(sample, origin=[0,0,0]):
-    scene_pc = sample['scene_point_clouds']
-    inds = (sample['parking_label_mask'] == 1)
-    center = sample['center_label'][inds,:]
-    theta = sample['theta']
-    weights = sample['weights']
-    #filter low weight parking spots
-    inds = np.squeeze(weights > .1)
-    center = center[inds,:]
-    theta = theta[inds]
-    parking = plot_parking(center, theta)
-    scene_pcd = o3d.geometry.PointCloud()
-    scene_pcd.points = o3d.utility.Vector3dVector(scene_pc[:, 0:3])
-    scene_pcd.colors = o3d.utility.Vector3dVector(scene_pc[:, 3:6])
-    o3d.visualization.draw_geometries(parking + [scene_pcd], zoom=0.76000000000000001,
-                                  front=  [ 0.010296775907018422, -0.87771203962763777, 0.47907781403297384 ],
-                                  lookat=[ 0.038509797341647958, 2.5947762886695709, -1.0388716510401055 ],
-                                  up=[ 0.03835858806610111, 0.47909728042225241, 0.87692326609206694 ])
 
 
 if __name__ == '__main__':
@@ -126,9 +103,7 @@ if __name__ == '__main__':
         sys.path.append(os.path.join(ROOT_DIR, 'sunrgbd'))
         from my_parknet_detection_dataset import DC # dataset config
         checkpoint_path = os.path.join(model_dir, 'checkpoint.tar')
-        read_dir = os.path.join(demo_dir, 'sample_scenes/%s'%(FLAGS.split_set))
-        #pc_path = os.path.join(demo_dir, 'sample_scenes/train_1/000001_object.ply')
-        #scene_pc_path = os.path.join(demo_dir, 'sample_scenes/train_1/pc.ply')
+        read_dir = os.path.join(demo_dir, 'sample/')
     else:
         print('Unkown dataset %s. Exiting.' % (DATASET))
         exit(-1)
@@ -141,7 +116,7 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     num_input_channel = int(FLAGS.use_color) * 3 + int(not FLAGS.no_height) * 1
     net = MODEL.ParkNet(num_proposal=FLAGS.num_target, input_feature_dim=num_input_channel, vote_factor=1,
-                        sampling='seed_fps', num_class=DC.num_class,
+                        sampling='vote_fps', num_class=DC.num_class,
                         num_heading_bin=DC.num_heading_bin,
                         num_weight_bin = DC.num_weight_bin,
                         ).to(device)
@@ -159,21 +134,18 @@ if __name__ == '__main__':
     net.eval()  # set model to eval mode (for bn and dp)
 
     #read all the files in the dir and show output
-    scan_idx_list = [2]
+    scan_idx_list = [2,3,12,18,67,216,314]
     scan_names = sorted(list(set([os.path.basename(x) for x in os.listdir(read_dir)])))
     if scan_idx_list is not None:
         scan_names = scan_idx_list
 
-    #dataset
-    dataset = ParknetDetectionVotesDataset(split_set=FLAGS.split_set, num_points=2000, use_height=True, use_color=True,
-                                           augment=False)
     for scan_name in scan_names:
         scan_name = np.int64(scan_name)
         point_cloud = np.load(os.path.join(read_dir, "%04d/%04d_pc.npz"%(scan_name,scan_name)))['pc']
-        scene_point_cloud = np.load(os.path.join(read_dir,"%04d/%04d_scene_pc.npz"%(scan_name,scan_name)))['scene_pc']
+        scene_cloud = np.load(os.path.join(read_dir,"%04d/%04d_scene_pc.npz"%(scan_name,scan_name)))['scene_pc']
         pc = preprocess_point_cloud(point_cloud, FLAGS.num_point)
-        scene_point_cloud = preprocess_point_cloud(scene_point_cloud, 20000)
-        print('Loaded point cloud data: %s/%04d' % (FLAGS.split_set,scan_name))
+        scene_point_cloud = preprocess_point_cloud(scene_cloud, 20000)
+        print('Loaded point cloud data: %04d' % (scan_name))
 
         # Model inference
         inputs = {'point_clouds': torch.from_numpy(pc).to(device), 'scene_point_clouds': torch.from_numpy(scene_point_cloud).to(device)}
@@ -190,11 +162,10 @@ if __name__ == '__main__':
         print('Finished detection. %d object detected.' % (len(pred_map_cls[0])))
 
 
-        dump_dir = os.path.join(demo_dir, '%s_results/%s/%04d' % (FLAGS.dataset, FLAGS.split_set,scan_name))
-        if not os.path.exists(dump_dir): os.mkdir(dump_dir)
+        dump_dir = os.path.join(demo_dir, '%s_results/%04d' % (FLAGS.dataset, scan_name))
+        if not os.path.exists(dump_dir):
+            os.makedirs(dump_dir)
         MODEL.dump_results(end_points, dump_dir, DC, True)
         print('Dumped detection results to folder %s' % (dump_dir))
-        #
-        # sample = dataset[scan_name]
-        # visualise_predictions(end_points, sample)
-        # visualise_groundtruth(sample)
+
+        visualise_predictions(end_points, scene_cloud)

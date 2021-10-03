@@ -37,8 +37,6 @@ parser.add_argument('--use_color', action='store_true', help='Use RGB color in i
 parser.add_argument('--nms_iou', type=float, default=0.25, help='NMS IoU threshold. [default: 0.25]')
 parser.add_argument('--conf_thresh', type=float, default=0.05,
                     help='Filter out predictions with obj prob less than it. [default: 0.05]')
-parser.add_argument('--faster_eval', action='store_true',
-                    help='Faster evaluation by skippling empty bounding box removal.')
 parser.add_argument('--shuffle_dataset', action='store_true', help='Shuffle the dataset (random order).')
 FLAGS = parser.parse_args()
 

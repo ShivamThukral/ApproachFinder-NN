@@ -11,6 +11,7 @@ Please follow the installation instructions mentioned [here](https://github.com/
 - Install [Pytorch](https://pytorch.org/)
     - `conda install pytorch==1.4.0 torchvision==0.5.0 cudatoolkit=10.1 -c pytorch`
 - Install [Tensorflow](https://github.com/tensorflow/tensorflow) for [TensorBoard](https://www.tensorflow.org/tensorboard)
+    - `conda install tensorflow`
 
 This code is compatible with Pytorch v1.4, CUDA 10.1 and TensorFlow v2.x 
 
@@ -46,6 +47,7 @@ To train ApproachFinder-NN on SUN RGB-D data:
 python train.py --log_dir log_docknet
 ```
 Use `-h` option to know more about training options. While training you can use TenserBoard to see loss curves by running `python -m tensorboard.main --logdir=<log_dir_name> --port=6006`
+The model would be saved in the log directory with name *'checkpoint.tar'*.
 ## Evaluation
 We evaluate our network on two criteria: 3D-bounding box tightness and desirability costmap. For further details about these mentrics please refer the paper.
 ```python

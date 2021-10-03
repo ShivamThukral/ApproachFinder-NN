@@ -41,8 +41,6 @@ parser.add_argument('--use_color', action='store_true', help='Use RGB color in i
 parser.add_argument('--nms_iou', type=float, default=0.25, help='NMS IoU threshold. [default: 0.25]')
 parser.add_argument('--conf_thresh', type=float, default=0.05,
                     help='Filter out predictions with obj prob less than it. [default: 0.05]')
-parser.add_argument('--faster_eval', action='store_true',
-                    help='Faster evaluation by skippling empty bounding box removal.')
 parser.add_argument('--shuffle_dataset', action='store_true', help='Shuffle the dataset (random order).')
 FLAGS = parser.parse_args()
 
@@ -262,7 +260,6 @@ class DesirabilityError(object):
             pred = {}  # map {id: center, heading}
             gt = {}  # map {id: gt, heading}
             for img_id in ids:
-
                 for score, center, weight, bbox in self.pred_map_cls[img_id]:
                     if img_id not in pred: pred[img_id] = {}
                     if 'center' not in pred[img_id]:
@@ -289,7 +286,6 @@ class DesirabilityError(object):
                 if img_id in gt and len(gt[img_id]['center']) > 0:
                     gt[img_id]['center'] = np.vstack(tuple(gt[img_id]['center']))  # (num_proposal, 3)
                     gt[img_id]['weights'] = np.vstack(tuple(gt[img_id]['weights']))  # (num_proposal, 12)
-
             #assert(len(gt) == len(pred))
             p = Pool(processes=batch_size_count)  # one class so one thread
             ret_values = p.map(eval_des_wrapper,
@@ -297,7 +293,7 @@ class DesirabilityError(object):
             p.close()
             p.join()
             error.append(ret_values)
-        error = np.array(error,dtype=object)
+        error = np.array(error, dtype=object)
         error = np.concatenate(error).ravel()
         #ret_dict['error_values'] = error
         ret_dict['desirability error'] = np.mean(error)
