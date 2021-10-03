@@ -56,3 +56,4 @@ Example results will be dumped in the eval_docknet and eval_des_docknet folder. 
 The evaluation results are stored in log_eval.txt file for both the metrics. 
 
 ## Results on SUN RGB-D dataset
+<img src="images/docknet_results.png" >
