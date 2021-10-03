@@ -2,7 +2,6 @@
 docknet/docknet_test/*
 docknet/eval_des_docknet/*
 docknet/eval_docknet/*
-docknet/demo_files/sample_scenes/*
 docknet/demo_files/sunrgbd_results/*
 
 #pycharm
