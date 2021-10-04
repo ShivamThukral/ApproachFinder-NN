@@ -34,12 +34,20 @@ Compile the CUDA layers for [PointNet++](http://arxiv.org/abs/1706.02413), which
 To see if the compilation is successful, try to run `python models/backbone_module.py`, `python models/voting_module.py`, `python models/my_proposal_module.py` and  `python models/parknet.py` to see if a forward pass works.
 
 ## Demo
-We ship the code with a pretrained model under *'demo_files/model/checkpoint.tar'*. We also ship some sample point clouds for running this demo (refer *demo_files/sample*).
+We ship the code with a pretrained model under *'demo_files/model/checkpoint.tar'*. We also ship some sample object point clouds for running this demo (refer *demo_files/sample*).
 Run the following command for demo:
 ```python
-python run_demo.py --model_dir demo_files/model
+python run_demo.py --model_dir demo_files/model/docknet
 ```
 For more information about input use `-h` option. The demo uses a pre-trained model to detect potential docking locations from validation set of SUN RGB-D dataset. We visualise 3D results using open3D and dump relevant intermendiate results in the dump folder.
+
+### Demo with scene point cloud:
+Our network expects object point cloud for proposals. You can supply a scene point cloud and we will first apply Votenet to filter candidate objects and then use ApproachFinder-NN for docking proposals.
+```asm
+python demo_scene.py --model_dir demo_files/model/docknet --votenet_dir demo_files/model/votenet
+```
+
+For more information about inputs use `-h` option.  
 
 ## Training
 **Dataset Preparation:** follow the instructions [here](ApproachFinderCV-SUNRGBD/README.md)
