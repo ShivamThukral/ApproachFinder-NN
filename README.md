@@ -44,10 +44,10 @@ For more information about input use `-h` option. The demo uses a pre-trained mo
 ### Demo with scene point cloud:
 Our network expects object point cloud for proposals. You can supply a scene point cloud and we will first apply Votenet to filter candidate objects and then use ApproachFinder-NN for docking proposals.
 ```asm
-python demo_scene.py --model_dir demo_files/model/docknet --votenet_dir demo_files/model/votenet
+python demo_scene.py --model_dir demo_files/model/docknet
 ```
 
-For more information about inputs use `-h` option.  
+For more information about inputs use `-h` option. The bounding box given by Votenet is marked in red.
 
 ## Training
 **Dataset Preparation:** follow the instructions [here](ApproachFinderCV-SUNRGBD/README.md)
