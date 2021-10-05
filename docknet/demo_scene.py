@@ -174,6 +174,6 @@ if __name__ == '__main__':
             end_points['scene_point_clouds'] = inputs['scene_point_clouds']
             pred_center = end_points['center']  # B,num_proposal,3
             pred_map_cls = my_parse_predictions(end_points, eval_config_dict)
-            print('Finished detection. %d object detected.' % (len(pred_map_cls[0])))
+            print('Finished detection. %d docking locations detected.' % (len(pred_map_cls[0])))
             visualise_predictions(end_points, scene_cloud, bbox)
     print("Code finished")
