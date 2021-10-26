@@ -18,6 +18,8 @@ parser.add_argument('--votenet_dir', default='log_docknet', help='Votenet model 
 parser.add_argument('--num_target', type=int, default=256, help='Number of proposals for Parknet [default: 128]')
 parser.add_argument('--no_height', action='store_true', help='Do NOT use height signal in input.')
 parser.add_argument('--use_color', action='store_true', help='Use RGB color in input.')
+parser.add_argument('--pcd_path', default='demo_files/sample/test/test-scene_translation_only.npz', help='PCD path.')
+
 FLAGS = parser.parse_args()
 
 
@@ -141,7 +143,7 @@ def visualise_predictions(end_points, scene, bbox):
         seed_pcd.paint_uniform_color([1,0,0])
         centers = plot_parking(parking_center, angle)
         lines = get_bbox_plot(bbox)
-        #o3d.visualization.draw_geometries(centers+[scene_pcd] + [lines] + [seed_pcd])
+        o3d.visualization.draw_geometries(centers+[scene_pcd] + [lines] + [seed_pcd])
         # weights
         weight = np.max(pred_heading_weight[i,inds].detach().cpu().numpy(),axis=1)
         #print(weight.shape)
@@ -178,7 +180,7 @@ def pass_through_filter(dic, pcd):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    pcd_path = "demo_files/sample/test/test-scene_translation_only.npz"
+    pcd_path = FLAGS.pcd_path
     scene_cloud = np.load(pcd_path)['arr_0'] # Mason: please change the file name - arr_0 to something meaningful
     #add color to the point cloud
     r,c = scene_cloud.shape
@@ -199,7 +201,7 @@ if __name__ == '__main__':
            "y": [-100, 100],
            "z": [-100, 100]}
     cropped = pass_through_filter(dic,scene_pcd)
-    #o3d.visualization.draw_geometries([scene_pcd,mesh_frame])
+    o3d.visualization.draw_geometries([scene_pcd,mesh_frame])
     # Now, z-axis is up and we can run votenet on it
     xyz_load = np.asarray(cropped.points)
     detections = run_votenet(xyz_load)
