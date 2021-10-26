@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--num_point', type=int, default=2000, help='Point Number [default: 20000]')
 parser.add_argument('--model_dir', default='log_docknet', help='Model path till directory')
 parser.add_argument('--votenet_dir', default='log_docknet', help='Votenet model path till directory')
-parser.add_argument('--num_target', type=int, default=192, help='Number of proposals for Parknet [default: 128]')
+parser.add_argument('--num_target', type=int, default=256, help='Number of proposals for Parknet [default: 128]')
 parser.add_argument('--no_height', action='store_true', help='Do NOT use height signal in input.')
 parser.add_argument('--use_color', action='store_true', help='Use RGB color in input.')
 FLAGS = parser.parse_args()
@@ -112,6 +112,7 @@ def get_bbox_plot(bbox):
 
 
 def visualise_predictions(end_points, scene, bbox):
+    predictions = []
     point_clouds = end_points['point_clouds'].cpu().numpy()
     pred_center = end_points['center'].detach().cpu().numpy()  # (B,K,3)
     pred_heading_weight = end_points['weights_per_heading_scores'].detach().cpu().detach()
@@ -122,13 +123,16 @@ def visualise_predictions(end_points, scene, bbox):
     pred_heading_class = np.argmax(pred_heading_weight, -1)  # B,num_proposal
     pred_heading_angle = pred_heading_class * ((2 * np.pi) / 12.0)
 
+
     for i in range(batch_size):
+
         scene_pc = scene
-        print(scene_pc.shape)
+        #print(scene_pc.shape)
         inds = (pred_mask[i, :] == 1)
         parking_center = pred_center[i, inds, 0:3]
-        angle = pred_heading_angle[i,inds]
-
+        angle = pred_heading_angle[i,inds].detach().cpu().numpy()
+        #print(parking_center.shape)
+        #print(angle.shape)
         scene_pcd = o3d.geometry.PointCloud()
         scene_pcd.points = o3d.utility.Vector3dVector(scene_pc[:, 0:3])
         scene_pcd.colors = o3d.utility.Vector3dVector(scene_pc[:, 3:6])
@@ -137,7 +141,13 @@ def visualise_predictions(end_points, scene, bbox):
         seed_pcd.paint_uniform_color([1,0,0])
         centers = plot_parking(parking_center, angle)
         lines = get_bbox_plot(bbox)
-        o3d.visualization.draw_geometries(centers+[scene_pcd] + [lines])
+        #o3d.visualization.draw_geometries(centers+[scene_pcd] + [lines] + [seed_pcd])
+        # weights
+        weight = np.max(pred_heading_weight[i,inds].detach().cpu().numpy(),axis=1)
+        #print(weight.shape)
+        predictions = np.hstack((parking_center, np.expand_dims(angle,1), np.expand_dims(weight,1)))
+        print(predictions.shape)
+    return predictions
 
 def flip_axis_to_camera(pc):
     ''' Flip X-right,Y-forward,Z-up to X-right,Y-down,Z-forward
@@ -154,24 +164,47 @@ def flip_axis_to_depth(pc):
     pc2[:,2] *= -1
     return pc2
 
+def pass_through_filter(dic, pcd):
+    points = np.asarray(pcd.points)
+    colors = np.asarray(pcd.colors)
+    x_range = np.logical_and(points[:, 0] >= dic["x"][0], points[:, 0] <= dic["x"][1])
+    y_range = np.logical_and(points[:, 1] >= dic["y"][0], points[:, 1] <= dic["y"][1])
+    z_range = np.logical_and(points[:, 2] >= dic["z"][0], points[:, 2] <= dic["z"][1])
+    pass_through_filter = np.logical_and(x_range, np.logical_and(y_range, z_range))
+    pcd.points = o3d.utility.Vector3dVector(points[pass_through_filter])
+    return pcd
+
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    pcd_path = "demo_files/sample/test/test_pcd.npz"
+    pcd_path = "demo_files/sample/test/test-scene_translation_only.npz"
     scene_cloud = np.load(pcd_path)['arr_0'] # Mason: please change the file name - arr_0 to something meaningful
+    #add color to the point cloud
+    r,c = scene_cloud.shape
+    colors = np.tile([0,0,0],(r,1))   # Mason: if the camera gives color please add it here
+    scene_cloud = np.concatenate((scene_cloud, colors), axis=1)
+
     # habitat has the pcd in camera frame so we transform it to camera frame
     scene_pc = flip_axis_to_depth(scene_cloud)
-    print(scene_pc.shape)
+
     scene_pcd = o3d.geometry.PointCloud()
     scene_pcd.points = o3d.utility.Vector3dVector(scene_pc[:, 0:3])
-    #scene_pcd.paint_uniform_color([0.5, 0.3, 0.1])
     # this is use to find the right axes
     mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
-        size=0.6, origin=[-2, -2, -2])
-    o3d.visualization.draw_geometries([scene_pcd, mesh_frame])
+        size=0.6, origin=[0,0,0])
+
+    # in case you want to use pass through filter
+    dic = {"x": [-100, 100],
+           "y": [-100, 100],
+           "z": [-100, 100]}
+    cropped = pass_through_filter(dic,scene_pcd)
+    #o3d.visualization.draw_geometries([scene_pcd,mesh_frame])
     # Now, z-axis is up and we can run votenet on it
-    detections = run_votenet(scene_cloud)
-    scene_point_cloud = preprocess_point_cloud(scene_cloud, 20000)
+    xyz_load = np.asarray(cropped.points)
+    detections = run_votenet(xyz_load)
+    predictions = None
+    scene_point_cloud = preprocess_point_cloud(xyz_load, 20000)
     for cls, score, bbox, obj_pc in detections:
         pc = preprocess_point_cloud(obj_pc, FLAGS.num_point)
         # Model inference
@@ -182,12 +215,18 @@ if __name__ == '__main__':
             end_points = net(inputs)
         toc = time.time()
         print('Inference time: %f' % (toc - tic))
+
         end_points['point_clouds'] = inputs['point_clouds']
         end_points['scene_point_clouds'] = inputs['scene_point_clouds']
         pred_center = end_points['center']  # B,num_proposal,3
         pred_map_cls = my_parse_predictions(end_points, eval_config_dict)
         print('Finished detection. %d docking locations detected.' % (len(pred_map_cls[0])))
-        visualise_predictions(end_points, scene_cloud, bbox)
+        proposals = visualise_predictions(end_points, scene_pc, bbox)
+        if predictions is None:
+            predictions = proposals
+        else:
+            predictions = np.append(predictions,proposals, axis=0)
+    print(predictions.shape) # <-- (x,y,z,theta,w) as an array
     print("Code finished")
 
 

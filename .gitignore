@@ -39,3 +39,4 @@ docknet/demo_files/sunrgbd_results/*
 *.exe
 *.out
 *.app
+/docknet/demo_files/sample/test/

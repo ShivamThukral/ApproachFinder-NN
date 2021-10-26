@@ -69,7 +69,7 @@ def run_votenet(scene_pc):
     with torch.no_grad():
         end_points = net(inputs)
     toc = time.time()
-    #print('Inference time: %f' % (toc - tic))
+    print('Inference time: %f' % (toc - tic))
     end_points['point_clouds'] = inputs['point_clouds']
     pred_map_cls = parse_pred(end_points, eval_config_dict)
     print('Finished detection. %d object detected.' % (len(pred_map_cls[0])))
@@ -82,10 +82,10 @@ def run_votenet(scene_pc):
         box3d_pts_3d = flip_axis_to_depth(
             box3d_pts_3d)  # the 3d points are in the camera frame so need to convert it to world frame
         obj_score = pred_list[2]
-        #print("Semantic Class: ", semantic_class, " Object Score : ", obj_score)
+        print("Semantic Class: ", semantic_class, " Object Score : ", obj_score)
         pc_in_box3d, inds = votenet_sunrgbd.votenet_sunrgbd_utils.extract_pc_in_box3d(input_pc, box3d_pts_3d)
         detection = [semantic_class, obj_score, box3d_pts_3d, pc_in_box3d]
-        if semantic_class in ["table", "toilet"] and obj_score > 0.85:
+        if semantic_class in ["table", "toilet"] and obj_score > 0.65:
             candidate_detections.append(detection)
     return candidate_detections
 

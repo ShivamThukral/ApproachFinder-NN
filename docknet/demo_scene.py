@@ -142,8 +142,8 @@ def visualise_predictions(end_points, scene, bbox):
         seed_pcd.paint_uniform_color([1,0,0])
         centers = plot_parking(parking_center, angle)
         lines = get_bbox_plot(bbox)
-        o3d.visualization.draw_geometries(centers+[scene_pcd] + [lines])
-
+        #o3d.visualization.draw_geometries(centers+[scene_pcd] + [lines])
+        o3d.visualization.draw_geometries([scene_pcd] + [lines])
 
 if __name__ == '__main__':
     demo_dir = os.path.join(BASE_DIR, 'demo_files')
