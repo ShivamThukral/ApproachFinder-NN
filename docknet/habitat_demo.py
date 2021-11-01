@@ -9,6 +9,8 @@ import time
 
 import torch
 import torch.optim as optim
+from scipy.spatial.transform import Rotation as R
+from numpy.linalg import inv
 
 
 parser = argparse.ArgumentParser()
@@ -124,7 +126,8 @@ def visualise_predictions(end_points, scene, bbox):
     pred_mask = end_points['pred_mask']  # B,num_proposal
     pred_heading_class = np.argmax(pred_heading_weight, -1)  # B,num_proposal
     pred_heading_angle = pred_heading_class * ((2 * np.pi) / 12.0)
-
+    mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
+        size=0.6, origin=[0, 0, 0])
 
     for i in range(batch_size):
 
@@ -137,13 +140,13 @@ def visualise_predictions(end_points, scene, bbox):
         #print(angle.shape)
         scene_pcd = o3d.geometry.PointCloud()
         scene_pcd.points = o3d.utility.Vector3dVector(scene_pc[:, 0:3])
-        scene_pcd.colors = o3d.utility.Vector3dVector(scene_pc[:, 3:6])
+        #scene_pcd.colors = o3d.utility.Vector3dVector(scene_pc[:, 3:6])
         seed_pcd = o3d.geometry.PointCloud()
         seed_pcd.points = o3d.utility.Vector3dVector(seed_xyz[i,:,:])
         seed_pcd.paint_uniform_color([1,0,0])
         centers = plot_parking(parking_center, angle)
         lines = get_bbox_plot(bbox)
-        o3d.visualization.draw_geometries(centers+[scene_pcd] + [lines] + [seed_pcd])
+        o3d.visualization.draw_geometries(centers+[scene_pcd] + [lines] + [seed_pcd] + [mesh_frame])
         # weights
         weight = np.max(pred_heading_weight[i,inds].detach().cpu().numpy(),axis=1)
         #print(weight.shape)
@@ -176,7 +179,36 @@ def pass_through_filter(dic, pcd):
     pcd.points = o3d.utility.Vector3dVector(points[pass_through_filter])
     return pcd
 
+def transform_and_back(scene_cloud):
 
+    #scene_pc = flip_axis_to_depth(scene_cloud)
+    #scene_pc = flip_axis_to_camera(scene_pc)
+    mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
+        size=0.6, origin=[0, 0, 0])
+    scene_pcd = o3d.geometry.PointCloud()
+    scene_pcd.points = o3d.utility.Vector3dVector(scene_cloud[:, 0:3])
+    o3d.visualization.draw_geometries([scene_pcd, mesh_frame])
+    # p_transform = p_no_tran * R * T
+    translation = np.array([9.7002449,  1.36596227, 4.24382544,1.0])
+    quat = [0.927975594997406, -0.00800682511180639, 0.372489452362061, -0.00698418589308858]
+    rotation = R.from_quat(quat)
+    A = np.zeros((4,4))
+    A[0:3,0:3] = rotation.as_matrix()
+    A[:,3] = np.transpose(translation)
+    scene_pcd.transform(A)
+    points = flip_axis_to_depth(np.asarray(scene_pcd.points))
+    points[:,2] *= -1   # when I visualised I realised that the z-axis was inverted
+    scene_pcd.points = o3d.utility.Vector3dVector(points)
+    o3d.visualization.draw_geometries([scene_pcd, mesh_frame])
+
+    #now we go back to the same frame
+    points[:, 2] *= -1
+    points = flip_axis_to_camera(np.asarray(points))
+    scene_pcd.points = o3d.utility.Vector3dVector(points)
+    from numpy.linalg import inv
+    Ainv = inv(A)
+    scene_pcd.transform(Ainv)
+    o3d.visualization.draw_geometries([scene_pcd, mesh_frame])
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -187,11 +219,9 @@ if __name__ == '__main__':
     colors = np.tile([0,0,0],(r,1))   # Mason: if the camera gives color please add it here
     scene_cloud = np.concatenate((scene_cloud, colors), axis=1)
 
-    # habitat has the pcd in camera frame so we transform it to camera frame
-    scene_pc = flip_axis_to_depth(scene_cloud)
-
+    #currently everything in no transform
     scene_pcd = o3d.geometry.PointCloud()
-    scene_pcd.points = o3d.utility.Vector3dVector(scene_pc[:, 0:3])
+    scene_pcd.points = o3d.utility.Vector3dVector(scene_cloud[:, 0:3])
     # this is use to find the right axes
     mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
         size=0.6, origin=[0,0,0])
@@ -201,9 +231,24 @@ if __name__ == '__main__':
            "y": [-100, 100],
            "z": [-100, 100]}
     cropped = pass_through_filter(dic,scene_pcd)
-    o3d.visualization.draw_geometries([scene_pcd,mesh_frame])
+    #o3d.visualization.draw_geometries([scene_pcd,mesh_frame])     #<-----: Unaltered  point cloud
+    # Now we apply given transformations
+    # p_transform = p_no_tran * R * T
+    translation = np.array([9.7002449, 1.36596227, 4.24382544, 1.0])
+    quat = [0.927975594997406, -0.00800682511180639, 0.372489452362061, -0.00698418589308858]
+    rotation = R.from_quat(quat)
+    A = np.zeros((4, 4))
+    A[0:3, 0:3] = rotation.as_matrix()
+    A[:, 3] = np.transpose(translation)
+    scene_pcd.transform(A)
+    points = flip_axis_to_depth(np.asarray(scene_pcd.points))
+    points[:, 2] *= -1  # when I visualised I realised that the z-axis was inverted
+    scene_pcd.points = o3d.utility.Vector3dVector(points)
+    #o3d.visualization.draw_geometries([scene_pcd, mesh_frame])       #<---- this is in world frame as far as I understand
+
     # Now, z-axis is up and we can run votenet on it
-    xyz_load = np.asarray(cropped.points)
+    #xyz_load = np.asarray(cropped.points)
+    xyz_load = np.asarray(scene_pcd.points)
     detections = run_votenet(xyz_load)
     predictions = None
     scene_point_cloud = preprocess_point_cloud(xyz_load, 20000)
@@ -223,12 +268,34 @@ if __name__ == '__main__':
         pred_center = end_points['center']  # B,num_proposal,3
         pred_map_cls = my_parse_predictions(end_points, eval_config_dict)
         print('Finished detection. %d docking locations detected.' % (len(pred_map_cls[0])))
-        proposals = visualise_predictions(end_points, scene_pc, bbox)
+        #proposals = visualise_predictions(end_points, scene_pc, bbox)
+        proposals = visualise_predictions(end_points, np.asarray(scene_pcd.points), bbox)
+
         if predictions is None:
             predictions = proposals
         else:
             predictions = np.append(predictions,proposals, axis=0)
-    print(predictions.shape) # <-- (x,y,z,theta,w) as an array
+    print(predictions.shape) # <-- (x,y,z,theta,w) as an array but in world frame
+    # lets go back
+    if predictions is not None:
+        docking_locations = np.asarray(predictions[:,0:3])
+        docking_locations[:, 2] *= -1
+        docking_locations = flip_axis_to_camera(np.asarray(docking_locations))
+        docking_pcd = o3d.geometry.PointCloud()
+        docking_pcd.points = o3d.utility.Vector3dVector(docking_locations)
+        docking_pcd.paint_uniform_color([1,0,0])
+        Ainv = inv(A)
+        docking_pcd.transform(Ainv)
+        points = np.asarray(scene_pcd.points)
+        points[:, 2] *= -1
+        points = flip_axis_to_camera(np.asarray(points))
+        scene_pcd.points = o3d.utility.Vector3dVector(points)
+        scene_pcd.transform(Ainv)
+        o3d.visualization.draw_geometries([scene_pcd, mesh_frame,docking_pcd])
+
+
+    #transform_and_back(scene_cloud)
+
     print("Code finished")
 
 
