@@ -221,21 +221,22 @@ if __name__ == '__main__':
 
     scene_pcd = o3d.geometry.PointCloud()
     scene_pcd.points = o3d.utility.Vector3dVector(scene_cloud[:, 0:3])
+    scene_pcd.scale(0.9, scene_pcd.get_center())
     # this is use to find the right axes
     mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
-        size=0.6, origin=[0,0,0])
+        size=10, origin=[0,0,0])
 
     # in case you want to use pass through filter
     dic = {"x": [-100, 100],
            "y": [-100, 100],
            "z": [-100, 100]}
     cropped = pass_through_filter(dic,scene_pcd)
-    #o3d.visualization.draw_geometries([cropped,mesh_frame])     #<-----: Unaltered  point cloud
+    o3d.visualization.draw_geometries([cropped,mesh_frame])     #<-----: Unaltered  point cloud
     # Now we apply given transformations
     points = flip_axis_to_depth(np.asarray(cropped.points))
     points[:, 2] *= -1  # when I visualised I realised that the z-axis was inverted
     cropped.points = o3d.utility.Vector3dVector(points)
-    #o3d.visualization.draw_geometries([cropped, mesh_frame])       #<---- this is in world frame as far as I understand
+    o3d.visualization.draw_geometries([cropped, mesh_frame])       #<---- this is in world frame as far as I understand
 
     # Now, z-axis is up and we can run votenet on it
     xyz_load = np.asarray(cropped.points)
