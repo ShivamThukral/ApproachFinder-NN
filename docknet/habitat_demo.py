@@ -130,14 +130,10 @@ def visualise_predictions(end_points, scene, bbox):
         size=0.6, origin=[0, 0, 0])
 
     for i in range(batch_size):
-
         scene_pc = scene
-        #print(scene_pc.shape)
         inds = (pred_mask[i, :] == 1)
         parking_center = pred_center[i, inds, 0:3]
         angle = pred_heading_angle[i,inds].detach().cpu().numpy()
-        #print(parking_center.shape)
-        #print(angle.shape)
         scene_pcd = o3d.geometry.PointCloud()
         scene_pcd.points = o3d.utility.Vector3dVector(scene_pc[:, 0:3])
         scene_pcd.paint_uniform_color([0,0,0])#colors = o3d.utility.Vector3dVector(scene_pc[:, 3:6])
@@ -146,7 +142,7 @@ def visualise_predictions(end_points, scene, bbox):
         seed_pcd.paint_uniform_color([1,0,0])
         centers = plot_parking(parking_center, angle)
         lines = get_bbox_plot(bbox)
-        o3d.visualization.draw_geometries(centers+[scene_pcd] + [lines] + [seed_pcd] + [mesh_frame])
+        o3d.visualization.draw_geometries(centers+[scene_pcd] + [lines] + [seed_pcd] + [mesh_frame], window_name="votenet")
         # weights
         weight = np.max(pred_heading_weight[i,inds].detach().cpu().numpy(),axis=1)
         #print(weight.shape)
@@ -210,6 +206,26 @@ def transform_and_back(scene_cloud):
     scene_pcd.transform(Ainv)
     o3d.visualization.draw_geometries([scene_pcd, mesh_frame])
 
+
+
+def visualise_test(docking_locations, scene_pcd, given_world_pcd):
+    centers = o3d.geometry.PointCloud()
+    centers.points = o3d.utility.Vector3dVector(docking_locations)
+    centers.paint_uniform_color([1,0,0])
+    mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
+        size=5, origin=[0, 0, 0])
+    points = np.asarray(scene_pcd.points)
+    points[:, 2] *= -1
+    points = flip_axis_to_camera(np.asarray(points))
+    scene_pcd.points = o3d.utility.Vector3dVector(points)
+    scene_pcd.paint_uniform_color([0,0,1])
+    o3d.visualization.draw_geometries([ centers, mesh_frame, given_world_pcd],
+                                      window_name="testing_world frame")  # <-----: Unaltered  point cloud
+
+
+
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     pcd_path = FLAGS.pcd_path
@@ -221,22 +237,25 @@ if __name__ == '__main__':
 
     scene_pcd = o3d.geometry.PointCloud()
     scene_pcd.points = o3d.utility.Vector3dVector(scene_cloud[:, 0:3])
-    scene_pcd.scale(0.9, scene_pcd.get_center())
+    #scene_pcd.scale(0.9, scene_pcd.get_center())
     # this is use to find the right axes
     mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
-        size=10, origin=[0,0,0])
+        size=5, origin=[0,0,0])
 
     # in case you want to use pass through filter
     dic = {"x": [-100, 100],
            "y": [-100, 100],
            "z": [-100, 100]}
     cropped = pass_through_filter(dic,scene_pcd)
-    o3d.visualization.draw_geometries([cropped,mesh_frame])     #<-----: Unaltered  point cloud
+    o3d.visualization.draw_geometries([cropped,mesh_frame], window_name="unaltered_pcd")     #<-----: Unaltered  point cloud
+    #given point cloud
+    given_world_pcd = o3d.geometry.PointCloud(scene_pcd.points)
+
     # Now we apply given transformations
     points = flip_axis_to_depth(np.asarray(cropped.points))
     points[:, 2] *= -1  # when I visualised I realised that the z-axis was inverted
     cropped.points = o3d.utility.Vector3dVector(points)
-    o3d.visualization.draw_geometries([cropped, mesh_frame])       #<---- this is in world frame as far as I understand
+    o3d.visualization.draw_geometries([cropped, mesh_frame], window_name="votenet_frame")       #<---- this is in world frame as far as I understand
 
     # Now, z-axis is up and we can run votenet on it
     xyz_load = np.asarray(cropped.points)
@@ -272,6 +291,7 @@ if __name__ == '__main__':
         docking_locations[:, 2] *= -1
         docking_locations = flip_axis_to_camera(np.asarray(docking_locations))
         predictions[:,0:3] = docking_locations
+        #visualise_test(docking_locations, scene_pcd, given_world_pcd)
         print(docking_locations.shape)  # <-- (x,y,z) as an array but in world frame
 
     print("Code finished")

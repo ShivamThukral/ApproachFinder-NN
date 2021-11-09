@@ -142,14 +142,15 @@ def visualise_predictions(end_points, scene, bbox):
         seed_pcd.paint_uniform_color([1,0,0])
         centers = plot_parking(parking_center, angle)
         lines = get_bbox_plot(bbox)
-        #o3d.visualization.draw_geometries(centers+[scene_pcd] + [lines])
-        o3d.visualization.draw_geometries([scene_pcd] + [lines])
+        o3d.visualization.draw_geometries(centers+[scene_pcd] + [lines])
+        #o3d.visualization.draw_geometries([scene_pcd])
 
 if __name__ == '__main__':
     demo_dir = os.path.join(BASE_DIR, 'demo_files')
     read_dir = os.path.join(demo_dir, 'sample/')
     # read all the files in the dir and show output
     scan_idx_list = [2,3,12,18,67,216,314]
+    #scan_idx_list = [2]
     scan_names = sorted(list(set([os.path.basename(x) for x in os.listdir(read_dir)])))
     if scan_idx_list is not None:
         scan_names = scan_idx_list
