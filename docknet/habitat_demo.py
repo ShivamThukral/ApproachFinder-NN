@@ -127,7 +127,7 @@ def visualise_predictions(end_points, scene, bbox):
     pred_heading_class = np.argmax(pred_heading_weight, -1)  # B,num_proposal
     pred_heading_angle = pred_heading_class * ((2 * np.pi) / 12.0)
     mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
-        size=0.6, origin=[0, 0, 0])
+        size=5, origin=[0, 0, 0])
 
     for i in range(batch_size):
         scene_pc = scene
@@ -180,7 +180,7 @@ def transform_and_back(scene_cloud):
     #scene_pc = flip_axis_to_depth(scene_cloud)
     #scene_pc = flip_axis_to_camera(scene_pc)
     mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
-        size=0.6, origin=[0, 0, 0])
+        size=5, origin=[0, 0, 0])
     scene_pcd = o3d.geometry.PointCloud()
     scene_pcd.points = o3d.utility.Vector3dVector(scene_cloud[:, 0:3])
     o3d.visualization.draw_geometries([scene_pcd, mesh_frame])
@@ -208,7 +208,13 @@ def transform_and_back(scene_cloud):
 
 
 
-def visualise_test(docking_locations, scene_pcd, given_world_pcd):
+def visualise_test(docking_locations, scene_pcd, given_world_pcd, origin = np.array([0,0,0])):
+    robot_position = [-10.432337760925293, -4.616030693054199, 1.344978928565979] # XYZ
+    robot = o3d.geometry.TriangleMesh.create_sphere(radius=0.9)
+    robot.paint_uniform_color([0.5, 0.5, 0.5])
+    robot.translate(origin + robot_position)
+
+
     centers = o3d.geometry.PointCloud()
     centers.points = o3d.utility.Vector3dVector(docking_locations)
     centers.paint_uniform_color([1,0,0])
@@ -219,7 +225,7 @@ def visualise_test(docking_locations, scene_pcd, given_world_pcd):
     points = flip_axis_to_camera(np.asarray(points))
     scene_pcd.points = o3d.utility.Vector3dVector(points)
     scene_pcd.paint_uniform_color([0,0,1])
-    o3d.visualization.draw_geometries([ centers, mesh_frame, given_world_pcd],
+    o3d.visualization.draw_geometries([ centers, mesh_frame, given_world_pcd, robot],
                                       window_name="testing_world frame")  # <-----: Unaltered  point cloud
 
 
@@ -228,6 +234,7 @@ def visualise_test(docking_locations, scene_pcd, given_world_pcd):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+
     pcd_path = FLAGS.pcd_path
     scene_cloud = np.load(pcd_path)['arr_0']
     #add color to the point cloud
@@ -291,9 +298,8 @@ if __name__ == '__main__':
         docking_locations[:, 2] *= -1
         docking_locations = flip_axis_to_camera(np.asarray(docking_locations))
         predictions[:,0:3] = docking_locations
-        #visualise_test(docking_locations, scene_pcd, given_world_pcd)
+        visualise_test(docking_locations, scene_pcd, given_world_pcd)
         print(docking_locations.shape)  # <-- (x,y,z) as an array but in world frame
-
     print("Code finished")
 
 
