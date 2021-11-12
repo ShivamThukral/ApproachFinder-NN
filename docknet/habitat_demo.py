@@ -176,11 +176,7 @@ def pass_through_filter(dic, pcd):
     pcd.points = o3d.utility.Vector3dVector(points[pass_through_filter])
     return pcd
 
-
-
-
 def visualise_test(docking_locations, scene_pcd, given_world_pcd, origin = np.array([0,0,0])):
-
     centers = o3d.geometry.PointCloud()
     centers.points = o3d.utility.Vector3dVector(docking_locations)
     centers.paint_uniform_color([1,0,0])
@@ -193,10 +189,6 @@ def visualise_test(docking_locations, scene_pcd, given_world_pcd, origin = np.ar
     scene_pcd.paint_uniform_color([0,0,1])
     o3d.visualization.draw_geometries([ centers, mesh_frame, given_world_pcd],
                                       window_name="testing_world frame")  # <-----: Unaltered  point cloud
-
-
-
-
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
