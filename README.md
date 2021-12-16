@@ -2,9 +2,28 @@
 A real-time computer vision algorithm to find potential docking locations indoor environments.
 
 ## Project Brief:
-TODO: Add abstract here
+A smart wheelchair improves the quality of life for older adults by supporting their mobility independence. Some
+critical maneuvering tasks, like table docking and doorway passage, can be challenging for older adults in wheelchairs,
+especially those with additional impairment of cognition, perception or fine motor skills. Supporting such functions in
+a shared manner with robot control seems to be an ideal solution. Considering this, we propose to augment smart
+wheelchair perception with the capability to identify potential docking locations in indoor scenes.
+
+[ApproachFinder-CV](https://github.com/ShivamThukral/ApproachFinder-CV) is a computer vision pipeline that detects safe docking poses and estimates their desirability weight based on
+hand-selected geometric relationships and visibility. Although robust, this pipeline is computationally intensive. We
+leverage this vision pipeline to generate ground truth labels used to train an end-to-end differentiable neural net that
+is 15x faster. 
+
+[ApproachFinder-NN](https://github.com/ShivamThukral/ApproachFinder-NN) is a point-based method that draws motivation from Hough voting and uses deep point
+cloud features to vote for potential docking locations. Both approaches rely on just geometric information, making them
+invariant to image distortions. A large-scale indoor object detection dataset, SUN RGB-D, is used to design, train and
+evaluate the two pipelines.
 
 <img src="images/docknet-teaser.png" >
+
+Potential docking locations are encoded as a 3D temporal desirability cost map that can be integrated into any real-time
+path planner. As a proof of concept, we use a model predictive controller that consumes this 3D costmap with efficiently
+designed task-driven cost functions to share human intent. This [wheelchair navigation](https://github.com/ShivamThukral/Wheelchair-Navigation) controller outputs a nominal path that is safe,
+goal-oriented and jerk-free for wheelchair navigation.
 
 ## Installation Instructions:
 Please follow the installation instructions mentioned [here](https://github.com/ShivamThukral/ApproachFinder-CV#installation-instructions) to run the ApproachFinder-CV pipeline. Apart from this, you will have to install the following packages to run ApproachFInder-NN:
